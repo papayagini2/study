@@ -1,0 +1,105 @@
+# 자기 소개 
+# 빅분기 목적 
+
+# R, RStudio 설치 
+# RStudio 셋팅: 4개 화면 둘러보기, 글자크기 등 조정 
+# 프로젝트, working directory setting - setwd() , #으로 구분하기. 
+# .R 파일, .RMD 파일, knit
+# 패키지: 설치된 패키지 확인, 패키지 로딩(처음에 로딩, package::함수() 구분), 빅분기 패키지 리스트 
+# 주요 패키지 설치: base, tidyverse, caret, tidymodels(recipes), modeltimes 
+# 각 실행 후 다음라인: ctrl+ enter, 실행: alt + enter, 단어 선택: ctrl + shift + 왼쪽/오른쪽
+# ctrl + shift + m (%>%) , <- (Alt + -), crtl + shift + c (주석달기), ctrl + shift + 화살표
+# tidyverse style의 파이프라인 이해 : 데이터 %>%  함수() %>%  함수() -> 결과 
+# 패키지 정보, 함수 메뉴얼 보는 방법 이해 
+
+# 코딩은 최대한 간결하게! 
+# 데이터 읽을 때 위치, locale 등 잘 맞춰서 읽기.. 
+# read.csv 안 되면 data.frame:fread(), readr::read_csv() 도 시도 해 볼 것 
+
+# 자꾸 변수에 담지 말고.. 다시 활용하려면 변수에 담고, 그렇지 않으면 바로 바로 연결되도록.. (뭔말인지 아시죠?) 
+# 함수 만드는 거 익숙하면 만들지만.. 최대한 빨리 짤 수 있도록 
+
+## R docker 만들기 
+# docekr desktop 검색하여 다운로드 & 설치 
+# https://www.docker.com/products/docker-desktop
+
+# 빅분기 구름 환경 둘러보기 - dataq 공지 사항 확인 
+installed.packages()
+library(help="caret")
+library(recipes)
+?recipes::recipe()
+
+
+# 빅분기 문제 풀이: 작업형 1 - 벡터, matric, list, dataframe, tibble 이해, base와 dplyr의 df 처리
+# pivot, group_by, order_by 등의 개념 이해
+# "홈런왕 최다 수상자" vs "역대 홈런수 최고 선수" 차이 이해 
+# 전처리 외에 통계 검정(t.test, aov, 모수/비모수, H0, H1 기각 등 이해 필요)
+
+# 빅분기 문제 풀이: 모델링 - caret, recipes 조합
+# kaggle 방식의 이해 - 타이타닉, 집값 예측   
+# 모델링 순서: 라이브러리 로딩
+
+# 데이터 로딩 팁
+left_join(
+  read.csv("X_train.csv") ->  X_train, 
+  read.csv("y_train.csv") ->  y_train ) %>%  
+  mutate(index = "train") -> train 
+
+read.csv("X_test.csv")  %>%  
+  mutate(index = "test") ->  X_test
+
+bind_rows(train, X_test) -> full 
+
+full$gender   <-  ifelse(full$gender   == "1", "남성", "여성")
+full$gender %<>%  as.factor()
+full$index  %<>%  as.factor()
+
+(전처리...) 
+full2 %>%  filter(index == "train") %>%  select(-index) -> train2
+full2 %>%  filter(index == "test")  %>%  select(-index) -> test2
+# 모아서 전처리하고, 나중에 index로 다시 train/test 변환 하는게 작업 용이
+
+# 모델링 train/test 분할 헷갈리지 말 것 
+# train/test 로 주어진 데이터를 어떻게 처리할 지 헷갈리면 안 됨
+# 하이퍼파라메터 변경하면서 train을 cv 로 돌리고 평가하는 개념 헷갈리지 말 것 
+
+# 전처리 reciipese 적극 활용 
+# 결측치 처리(step_impute_linear(), recipes::step_medianimpute(), recipes::step_modeimpute(), step_knnimpute()) 
+# 타입 관리(step_num2factor(), step_dummy(...one_hot=TRUE), step_bin2factor()
+# 스케일링(step_scale(), step_center(), step_log(), step_sqrt(), step_BoxCox(), step_YeoJohnson()
+# 다중공선성 처리 step_pca()
+# Imbalnced data 처리: step_upsample(), step_downsample() 있으나.. 이는 train할 때, trainControl()로 처리 하는게 편한 듯 
+# 앞에도 적었지만, 전체 데이터로 전처리하고 train/test 나누는 방식이 좀 더 유리할 듯
+# (사실 논리적으로는 train/test 나누고 train으로 전처리(rciepe 를 prep하고) train에 적용하고(juice), test에 적용(bake)하는 게 맞는데..
+# 사전에 train/test를 모두 받아보는 입장에서 ..이렇게 하는게 유리할 수 있음. 
+# 물론 이는 FM 대로 train/test 나누고 전처리하는 것도 괜찮음.
+
+# train 할 때 어떠한 metric으로 학습 할 건지 명확하게
+# caret:train() 기준으로 회귀는 RMSE, 분류는 accuracy가 기본 값임
+# 주어진 문제에 따라 MAE, R2, ROC 등으로 학습할 것인지 명확히 처리 필요 
+# 최고 좋은 MAE를 가져오라고 했는데.. RMSE로 학습해서 그냥 MAE 계산해서 제출하는 초보 실수 범하지 말 것
+# R의 caret 기준 train할 때 ROC로 학습하려면 trainConrotl 에 classProbs = TRUE, summaryFunction = twoClassSummary 넣어 줌 주의
+  
+# 분석 모형은 가볍게 돌아가는 거와 오래 걸리는 거 구분해서 알아 둘 것 
+# 주어진 패키지에서 돌아가는 분석모형이 무엇인지 정리할 것 (예를 들어, lm, pls, rf, xgb 등) 
+# 코드는 1분내로 돌아가야 하므로, 오래 걸리는 놈들(svm, rf, xgb)이 무엇인지 확인 해 둘 것 
+# 하이퍼라라메터는 각 모형별 lookup 해서 캐치 해 놓되.. 기본 random search 로 충분 할 듯.
+# 시간 되면 grid나 범위(tune lenght) 주면서 처리 시도..다시 이야기 하지만 시간 되면.
+# getModelInfo() %>%  names(), modelLookup("glm") 적극 활용 
+
+# predict 할 때 실수하지 말 것 
+# prdict 할 때 recipe로 전처리한 test로 predict 할 것 
+# 회귀는 괜찮은데... 분류는 raw, prob 으로 할 지 주의 할 것
+# predict는 도움말 안 나오니 조심. 
+# oop, S3, R6 개념 이해 필요 
+# 웬만하면 y는 전처리(scale 등)하지 말고, 만일 했으면 역변환 잘 할 것 
+# predict 된 모델 write.csv 할 때 문제에서 주어진 컬럼명(대소문자 등 꼼꼼히), 문제에서 주어진 형태(확률인지, 수치인지, class인지), 반올림 했는지, rawname=F인지 등 꼼꼼하게 보고 만들 것 -> 왜냐면 시스템으로 채점 할 거니..
+                  
+# 만일 단순 회귀/분류가 아니면?
+# 기본적으로 군집, 시계열(arima, ets 정도만.) , 텍스트마이닝, 장바구니 분석 정도는 알고 있어야 함
+# 대충 어느 함수 쓰면 되는지 확인 했다가.. 시험에 나오면..욕하면서 대충 와꾸라도 짜면 될 듯 
+# 시계열에 대해서는 시험이 아니래도 반드시 익숙해져야 함. 
+# 소셜 분석, 이미지 분석은 절대 안 나옴
+
+# 일부 분석 모형의 분류 y값을 0,1, "0","1", "양","불" 등 제약사항 있으니 조절해서 학습 학 것                   
+
